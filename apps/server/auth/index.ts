@@ -8,6 +8,8 @@ import Crypto from "node-jsencrypt";
 import { PrivateKey } from "../common";
 
 import { createHash } from "crypto";
+import { v4 as uuidv4 } from "uuid";
+const cache = new Map();
 
 const connection = mysql.createConnection({
   host: "localhost",
@@ -53,6 +55,37 @@ app.post("/register", (req, res) => {
     }
   );
 });
+
+app.post("/login", (req, res) => {
+  let { account, password } = req.body;
+  account = Crypt.decrypt(account);
+  password = Crypt.decrypt(password);
+  console.log(account);
+  console.log(password);
+  const hash = createHash("md5");
+  hash.update(password);
+  const passwordHash = hash.digest("hex");
+  connection.query(
+    "SELECT * FROM `user` WHERE `account` = ? AND `password` = ?",
+    [account, passwordHash],
+    (err, results) => {
+      if (err) {
+        console.error(err);
+        res.status(500).send({ error: "Internal server error" });
+        return;
+      }
+      if (results.length > 0) {
+        const token = uuidv4();
+        cache.set(token, account);
+
+        res.json({ token });
+      }
+      console.log(results);
+
+    }
+  );
+});
+
 
 app.listen(3000, () => {
   console.log("auth 服务启动在 3000 端口");

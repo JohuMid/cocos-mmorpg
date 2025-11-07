@@ -52,8 +52,7 @@ export default class NetworkManager extends Singleton {
       this.ws.onmessage = (e) => {
         try {
           // TODO解析data和name
-          const data = e.data;
-          const name = 1;
+          const {name,data} = JSON.parse(e.data);
           try {
             if (this.maps.has(name) && this.maps.get(name).length) {
               this.maps.get(name).forEach(({ cb, ctx }) => cb.call(ctx, data));
@@ -99,6 +98,7 @@ export default class NetworkManager extends Singleton {
 
   async send(name: RpcFunc, data: IData) {
     // TODO
+    this.ws.send(JSON.stringify({ name, data }));
   }
 
   listen(name: RpcFunc, cb: (args: any) => void, ctx: unknown) {
