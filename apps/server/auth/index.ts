@@ -5,10 +5,12 @@ import mysql from "mysql";
 import dayjs from "dayjs";
 // @ts-ignore
 import Crypto from "node-jsencrypt";
-import { PrivateKey } from "../common";
+import { AuthService, CheckTokenRes, CheckTokenResData, PrivateKey } from "../common";
 
 import { createHash } from "crypto";
 import { v4 as uuidv4 } from "uuid";
+import * as grpc from "@grpc/grpc-js";
+
 const cache = new Map();
 
 const connection = mysql.createConnection({
@@ -90,3 +92,21 @@ app.post("/login", (req, res) => {
 app.listen(3000, () => {
   console.log("auth 服务启动在 3000 端口");
 });
+
+const server = new grpc.Server();
+server.addService(AuthService, {
+  checkToken: (call: any, callback: any) => {
+    const token = call.request.getToken();
+
+    const res = new CheckTokenRes();
+    if (cache.has(token)) {
+      const data = new CheckTokenResData();
+      data.setAccount(cache.get(token));
+      res.setData(data);
+    } else {
+      res.setError("token not exists")
+    }
+    callback(null, res);
+  },
+});
+

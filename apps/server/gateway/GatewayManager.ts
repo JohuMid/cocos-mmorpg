@@ -1,6 +1,7 @@
-import { RpcFunc } from "../common";
+import { AuthClient, CheckTokenReq, RpcFunc } from "../common";
 import { Singleton } from "../common/common/base"
 import { WebSocketServer, WebSocket } from "ws";
+import * as grpc from "@grpc/grpc-js";
 
 export class GatewayManager extends Singleton {
     static get Instance() {
@@ -25,11 +26,21 @@ export class GatewayManager extends Singleton {
 
         if (name === RpcFunc.enterGame) {
             //  TODO 验证token
+            this.checkToken(data);
 
         } else {
             // TODO 跟game服务通信
         }
 
         ws.send(buffer.toString());
+    }
+
+    checkToken({ token }: { token: string }) {
+        const client = new AuthClient("localhost:3333", grpc.credentials.createInsecure());
+        const req = new CheckTokenReq();
+        req.setToken(token);
+        client.checkToken(req, (err, message) => {
+            console.log(message.toObject());
+        });
     }
 }
